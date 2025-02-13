@@ -1,0 +1,193 @@
+---
+title: "Homework 3 for Statistical Thinking"
+author: "Allison Nguyen"
+date: "2025-02-8"
+output:
+  pdf_document: default
+  html_document: default
+---
+eid: ann2464
+
+github link: 
+
+```{r global_options, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(fig.height=5, fig.width=10, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+```
+```{r echo=FALSE,message=FALSE}
+#Importing libraries
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+library(mosaic)
+```
+
+```{r echo=FALSE, message = FALSE}
+gas <- read.csv('gasprices.csv')
+sclass <- read.csv('sclass.csv')
+pilot <- read.csv('nbc_pilotsurvey.csv')
+
+ebay <- read.csv('ebay.csv')
+```
+# **Problem 1**
+
+```{r echo=FALSE, message=False}
+name <- c("No Competition in sight","Competition in sight")
+names(name)<-c("N","Y")
+ggplot(gas,aes(x=Price))+geom_bar()+facet_wrap(Competitors~.,labeller = labeller(Competitors = name)) + labs(title="Do Competition Affect Gas Prices?", x="Price", y="Number of Gas Stations")+theme(plot.title = element_text(hjust = 0.5))
+
+other = do(10000)*diffmean(Price~Competitors,
+data=resample(gas))
+confint(other, level = 0.95)
+```
+
+Claim A: Gas stations charge more if they lack direct competition in sight.
+Evidence: According to the graph above, the prices for both groups are generally similar with the mean price difference being between -0.06 and 0.01 with a 95% confidence.
+Conclusion:The theory that Gas stations charge more if they lack direct competitors is unsupported by the data collected.
+
+```{r echo=FALSE, message=False}
+gas <- mutate(gas,"Income" = Income/1000)
+ggplot(gas)+geom_point(aes(x=Price,y=Income),pch = 20)+ labs(title="Does Income Affect Gas Price?", x="Price",y ="Income in the thousands")+theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+Claim B:The richer the area, the higher the gas prices.
+Evidence:According to the graph above, as the price increases the Income of the area also generally increases. There is a relatively weak positive correlation between Price and Income as the correlation is `r round(cor(gas$Price, gas$Income),3)`.
+Conclusion: This theory is not fully supported by the data presented.
+
+```{r echo=FALSE, message=False}
+light <- c("No stoplight","Near stoplight")
+names(light) <- c("N","Y")
+ggplot(gas, aes(x=Price)) + geom_bar() + facet_wrap(Stoplight~., labeller = labeller(Stoplight = light)) + labs(title="Do Gas Stations at Stoplights Charge More?", x="Price", y="Number of Gas Stations")+theme(plot.title = element_text(hjust = 0.5))
+
+light_diff = do(10000)*diffmean(Price ~ Spotlight,
+data = resample(gas))
+confint(light_diff, level = 0.95)
+```
+Claim C: Gas Stations at stoplights charge more.
+Evidence:According to both graphs above, both categories have similar numbers in price. The difference in the mean price between the two groups is between -0.04 and 0.03 with a 95% confidence.
+Conclusion: This theory is not supported by the data given.
+
+```{r echo=FALSE, message=False}
+highway <- c("No direct access", "direct highway access")
+names(highway) <- c("N", "Y")
+ggplot(gas, aes(x=Price)) + geom_bar() + facet_wrap(Highway~., labeller = labeller(Highway = highway)) + labs(title="Does having Highway access affect gas prices", x="Price", y="Number of Gas Stations")+theme(plot.title = element_text(hjust = 0.5))
+
+high_diff = do(10000)*diffmean(Price ~ Highway,
+data=resample(gas))
+confint(high_diff, level = 0.95)
+```
+
+Claim D: Gas Stations with direct highway access charge more.
+Evidence:According to the graph above, there are a lot more gas stations with no direct access to highways and that there are instances where they charge more compared to gas stations with direct highway access. The difference in the mean price is between 0.01 and 0.08 with a 95% confidence.
+Conclusion:This theory is not supported as there is no data supporting that stations with direct access charge higher prices.
+
+```{r echo=FALSE, message=False}
+gas <- mutate(gas, Shell = Brand=="Shell")
+Shell_brand <- c("Shell", "Not Shell")
+names(Shell_brand) <- c("TRUE", "FALSE")
+ggplot(gas, aes(x=Price)) + geom_bar() + facet_wrap(Shell~., labeller = labeller(Shell = Shell_brand)) + labs(title= "Comparing the prices of shell and non-shell brands", x="Price", y="Number of Gas Stations")
+
+shell_diff = do(10000)*diffmean(Price ~ Shell,
+data=resample(gas))
+confint(shell_diff, level = 0.95)
+```
+
+Claim E: Shell charges more than all other non-Shell brands
+Evidence: According to the graphs above, there is no significant difference between the prices that Shell gas stations charge and the prices of non-shell gas stations. There is a mean price difference of between -0.01 and 0.07 with 95% confidence.
+Conclusion: The theory is not supported by the data given.
+
+# **Problem 2: Mercedes S-CLass Data**
+
+## **Part A:**
+
+```{r echo=, message=False}
+sclass2011 <- filter(sclass, year==2011 & trim=="63 AMG")
+boot_sclass= do(10000)*mean(mileage ~ condition,
+data=resample(sclass2011))
+head(boot_sclass)
+confint(boot_sclass, level = 0.95)
+
+ggplot(data=boot_sclass) + 
+  geom_histogram(aes(x=Used), bins = 30, color = "lightblue")
+```
+
+## **Part B:**
+```{r echo=FALSE, message=False}
+sclass2014 <- filter(sclass, year==2014 & trim==550)
+sclass2014 <- mutate(sclass2014, Black = color=="Black")
+boot_2014 = do(10000)*prop(~Black,
+data=resample(sclass2014))
+head(boot_2014)
+confint(boot_2014, level = 0.95)
+
+ggplot(data=boot_2014) + 
+  geom_histogram(aes(x=prop_TRUE), bins = 30, color = "lightblue") + labs(x="Painted Black")
+```
+# **Problem 3**
+
+## **Part A.**
+
+```{r echo=FALSE, message=False}
+Earled <- filter(pilot, Show=="Living with Ed" | Show=="My Name is Earl")
+boot_Earled = do(10000)*diffmean(Q1_Happy ~ Show,
+data=resample(Earled))
+head(boot_Earled)
+confint(boot_Earled, level = 0.95)
+
+ggplot(data=boot_Earled) + 
+  geom_histogram(aes(x=diffmean), bins = 30, color = "lightblue")
+```
+
+1.) Question: Between the show "Living with Ed" and "My Name is Earl", which show makes viewers happier?
+2.) Approach: I resampled the data with a 95% confidence and used the bootstrap method to calculate the differences in the mean.
+3.) Results: The mean difference in viewer happiness is between -0.39 and 0.10 with a 95% confidence.
+4.) Conclusion: No one show, "Living with ED" or "My Name is Earl", makes viewers happier as the mean difference between the two is small.
+
+## **Part B.**
+
+```{r echo=FALSE, message=False}
+loser_LA <- filter(pilot, Show=="The Apprentice: Los Angeles" | Show=="The Biggest Loser")
+boot_loser_LA = do(10000)*diffmean(Q1_Annoyed ~ Show, data=resample(loser_LA))
+head(boot_loser_LA)
+confint(boot_loser_LA, level = 0.95)
+
+ggplot(data=boot_loser_LA) + 
+  geom_histogram(aes(x=diffmean), bins = 30, color = "lightblue")
+```
+
+1.) Question: Between the show "The Biggest Loser" and "The Apprentice Los Angeles", which show made viewers more annoyed?
+2.) Approach: I resampled the data with a 95% confidence and used the bootstrap method to calculate the differences in the mean.
+3.) Result: The mean difference to the question if the show makes the viewer annoyed falls between -0.52 and -0.02.
+4.) Conclusion: Due to the mean difference in viewer's answers being small, both shows generally make viewers annoyed the same amount.
+
+## **Part C.**
+
+```{r echo=FALSE, message=False}
+dwts <- filter(pilot, Show=="Dancing with the Stars")
+dwts <- mutate(dwts, Confused = Q2_Confusing >= 4)
+boot_dwts = do(10000)*prop(~Confused, data=resample(dwts))
+head(boot_dwts)
+confint(boot_dwts, level = 0.95)
+
+ggplot(data=boot_dwts) + 
+  geom_histogram(aes(x=prop_TRUE), bins = 30, color = "lightblue")"
+```
+
+1.) Question: What percentage of American TV watchers are expected to think that Dancing with the Stars is confusing?
+2.) Approach: I resampled the data with a 95% confidence and used the bootstrap method to calculate the differences in the mean.
+3.) Results: The mean difference between the responses from the viewers is between 0.03 and 0.11.
+4.) Conclusion: The percentage of people that are confused on the concept of Dancing with the Stars is low.
+
+# **Problem 4: EBay**
+```{r echo=FALSE, message=False}
+ebay <- mutate(ebay, ratio = round(rev_after/rev_before, 2))
+ebay$adwords_pause <- as.factor(ebay$adwords_pause)
+boot_ebay = do(10000)*diffmean(ratio ~ adwords_pause, data=resample(ebay))
+head(boot_ebay)
+confint(boot_ebay, level = 0.95)
+```
+
+1.) Question: Does the paid search advetising on Google generate more revenue for EBay? Is this supported by the revenue proportion of the treament and control DMAs?
+2.) Approach: I resampled the data with a 95% confidence and used the bootstrap method to calculate the differences in the mean.
+3.) Results: The mean difference between the control and treatment DMAs is between -0.091 and -0.013.
+4.) Conclusion: Overall paid search advertising does not necessarily generate more revenue for EBay, only certain specific DMAs generate additional revenue for EBay.
